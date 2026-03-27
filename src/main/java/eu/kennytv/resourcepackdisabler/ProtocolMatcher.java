@@ -2,15 +2,22 @@ package eu.kennytv.resourcepackdisabler;
 
 import com.velocitypowered.api.network.ProtocolVersion;
 import java.util.Arrays;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 public final class ProtocolMatcher {
 
     private final ProtocolVersion min;
     private final ProtocolVersion max;
+    private final boolean alwaysFalse;
 
     private ProtocolMatcher(final ProtocolVersion min, final ProtocolVersion max) {
+        this(min, max, false);
+    }
+
+    private ProtocolMatcher(final ProtocolVersion min, final ProtocolVersion max, final boolean alwaysFalse) {
         this.min = min;
         this.max = max;
+        this.alwaysFalse = alwaysFalse;
     }
 
     public static ProtocolMatcher parse(final String input) {
@@ -39,7 +46,14 @@ public final class ProtocolMatcher {
     }
 
     public boolean matches(final ProtocolVersion version) {
+        if (this.alwaysFalse) {
+            return false;
+        }
         return version.compareTo(this.min) >= 0 && version.compareTo(this.max) <= 0;
+    }
+
+    private static ProtocolMatcher none() {
+        return new ProtocolMatcher(ProtocolVersion.MINIMUM_VERSION, ProtocolVersion.MINIMUM_VERSION, true);
     }
 
     private static ProtocolMatcher atMost(final ProtocolVersion version) {
@@ -51,11 +65,31 @@ public final class ProtocolMatcher {
     }
 
     private static ProtocolMatcher lessThan(final ProtocolVersion version) {
-        return atMost(ProtocolVersion.values()[version.ordinal() - 1]);
+        final ProtocolVersion previous = previousSupportedVersion(version);
+        return previous == null ? none() : atMost(previous);
     }
 
     private static ProtocolMatcher greaterThan(final ProtocolVersion version) {
-        return atLeast(ProtocolVersion.values()[version.ordinal() + 1]);
+        final ProtocolVersion next = nextSupportedVersion(version);
+        return next == null ? none() : atLeast(next);
+    }
+
+    private static @Nullable ProtocolVersion previousSupportedVersion(final ProtocolVersion version) {
+        final ProtocolVersion[] versions = ProtocolVersion.values();
+        final int index = version.ordinal() - 1;
+        if (index < 0 || !versions[index].isSupported()) {
+            return null;
+        }
+        return versions[index];
+    }
+
+    private static @Nullable ProtocolVersion nextSupportedVersion(final ProtocolVersion version) {
+        final ProtocolVersion[] versions = ProtocolVersion.values();
+        final int index = version.ordinal() + 1;
+        if (index >= versions.length || !versions[index].isSupported()) {
+            return null;
+        }
+        return versions[index];
     }
 
     private static ProtocolVersion parseVersion(final String rawVersion, final String originalInput) {

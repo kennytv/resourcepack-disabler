@@ -14,7 +14,7 @@ import java.nio.file.Path;
 @Plugin(
         id = "resourcepackdisabler",
         name = "ResourcePack Disabler",
-        version = "1.0.0-SNAPSHOT",
+        version = "1.0.0",
         description = "Blocks backend resource packs for configured protocol versions."
 )
 public class ResourcePackDisablerPlugin {
